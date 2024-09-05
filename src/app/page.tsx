@@ -35,38 +35,41 @@ const SearchField = ({ setZoomLocation }: { setZoomLocation: (position: LatLngTu
   const map = useMap();
 
   useEffect(() => {
-    const provider = new OpenStreetMapProvider();
+    // Check if window is defined to ensure client-side execution
+    if (typeof window !== "undefined") {
+      const provider = new OpenStreetMapProvider();
 
-    const searchControl = new (GeoSearchControl as any)({
-      provider,
-      style: 'bar', // 'bar' for a search bar, 'button' for a search button
-      showMarker: false, // Do not show a marker on search
-      autoClose: true,
-      retainZoomLevel: false,
-      animateZoom: true,
-      keepResult: true,
-      searchLabel: 'Enter address or location',
-    });
+      const searchControl = new (GeoSearchControl as any)({
+        provider,
+        style: 'bar', // 'bar' for a search bar, 'button' for a search button
+        showMarker: false, // Do not show a marker on search
+        autoClose: true,
+        retainZoomLevel: false,
+        animateZoom: true,
+        keepResult: true,
+        searchLabel: 'Enter address or location',
+      });
 
-    map.addControl(searchControl);
+      map.addControl(searchControl);
 
-    map.on('geosearch/showlocation', (result: any) => {
-      const { x: lng, y: lat } = result.location;
+      map.on('geosearch/showlocation', (result: any) => {
+        const { x: lng, y: lat } = result.location;
 
-      // Check if the result is within Delhi bounds
-      const isInDelhi = delhiBounds.contains(L.latLng(lat, lng));
+        // Check if the result is within Delhi bounds
+        const isInDelhi = delhiBounds.contains(L.latLng(lat, lng));
 
-      if (isInDelhi) {
-        setZoomLocation([lat, lng] as LatLngTuple);
-        map.setView([lat, lng], 14); // Zoom to the location
-      } else {
-        alert("Location is outside Delhi bounds");
-      }
-    });
+        if (isInDelhi) {
+          setZoomLocation([lat, lng] as LatLngTuple);
+          map.setView([lat, lng], 14); // Zoom to the location
+        } else {
+          alert("Location is outside Delhi bounds");
+        }
+      });
 
-    return () => {
-      map.removeControl(searchControl);
-    };
+      return () => {
+        map.removeControl(searchControl);
+      };
+    }
   }, [map, setZoomLocation]);
 
   return null;
