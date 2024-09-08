@@ -5,6 +5,8 @@ import 'leaflet-geosearch/dist/geosearch.css';
 import L, { LatLngTuple } from 'leaflet';
 import { useEffect, useState } from "react";
 import Legend from "./Legend"; // Import your Legend component
+import SearchControl from "./SearchControl";
+ // Import SearchControl component
 
 // Define the bounds for Delhi
 const delhiBounds = L.latLngBounds(
@@ -14,10 +16,10 @@ const delhiBounds = L.latLngBounds(
 
 // Dummy AQI data with locations
 const aqiData: AQIData[] = [
-  { location: [28.6139, 77.2090] as LatLngTuple, aqi: 70, name: "Central Delhi" },  // Example: Central Delhi
-  { location: [28.7041, 77.1025] as LatLngTuple, aqi: 150, name: "North Delhi" },   // Example: North Delhi
-  { location: [28.4595, 77.0266] as LatLngTuple, aqi: 220, name: "South-West Delhi" }, // Example: South-West Delhi
-  { location: [28.4089, 77.3178] as LatLngTuple, aqi: 300, name: "East Delhi" },    // Example: East Delhi
+  { location: [28.6139, 77.2090] as LatLngTuple, aqi: 70, name: "Central Delhi" },
+  { location: [28.7041, 77.1025] as LatLngTuple, aqi: 150, name: "North Delhi" },
+  { location: [28.4595, 77.0266] as LatLngTuple, aqi: 220, name: "South-West Delhi" },
+  { location: [28.4089, 77.3178] as LatLngTuple, aqi: 300, name: "East Delhi" },
 ];
 
 // Define AQI color logic based on value
@@ -125,6 +127,9 @@ export default function MapComponent() {
         {/* Handle clicks to show AQI */}
         <MapClickHandler setClickedAQI={setClickedAQI} />
 
+        {/* Search control component */}
+        <SearchControl/>
+        
         {/* Legend component to handle AQI legend */}
         <Legend />
       </MapContainer>
