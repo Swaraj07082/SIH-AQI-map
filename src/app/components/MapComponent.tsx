@@ -1,11 +1,10 @@
-"use client";
-import { MapContainer, TileLayer, Circle, useMap, useMapEvent } from "react-leaflet";
+'use client'
+import { MapContainer, TileLayer, Circle, Popup, useMapEvent } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import 'leaflet-geosearch/dist/geosearch.css';
 import L, { LatLngTuple } from 'leaflet';
-import { GeoSearchControl, OpenStreetMapProvider } from 'leaflet-geosearch';
 import { useEffect, useState } from "react";
-import Legend from "./Legend";
+import Legend from "./Legend"; // Import your Legend component
 
 // Define the bounds for Delhi
 const delhiBounds = L.latLngBounds(
@@ -14,11 +13,11 @@ const delhiBounds = L.latLngBounds(
 );
 
 // Dummy AQI data with locations
-const aqiData = [
-  { location: [28.6139, 77.2090], aqi: 70 },  // Example: Central Delhi
-  { location: [28.7041, 77.1025], aqi: 150 }, // Example: North Delhi
-  { location: [28.4595, 77.0266], aqi: 220 }, // Example: South-West Delhi
-  { location: [28.4089, 77.3178], aqi: 300 }, // Example: East Delhi
+const aqiData: AQIData[] = [
+  { location: [28.6139, 77.2090] as LatLngTuple, aqi: 70, name: "Central Delhi" },  // Example: Central Delhi
+  { location: [28.7041, 77.1025] as LatLngTuple, aqi: 150, name: "North Delhi" },   // Example: North Delhi
+  { location: [28.4595, 77.0266] as LatLngTuple, aqi: 220, name: "South-West Delhi" }, // Example: South-West Delhi
+  { location: [28.4089, 77.3178] as LatLngTuple, aqi: 300, name: "East Delhi" },    // Example: East Delhi
 ];
 
 // Define AQI color logic based on value
@@ -31,66 +30,69 @@ const getAQIColor = (aqi: number) => {
   return "maroon";
 };
 
-// SearchField component
-const SearchField = ({ setZoomLocation }: { setZoomLocation: (position: LatLngTuple) => void }) => {
-  const map = useMap();
+// Function to calculate distance between two coordinates
+const getDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
+  const R = 6371e3; // metres
+  const φ1 = (lat1 * Math.PI) / 180;
+  const φ2 = (lat2 * Math.PI) / 180;
+  const Δφ = ((lat2 - lat1) * Math.PI) / 180;
+  const Δλ = ((lon1 - lon2) * Math.PI) / 180;
 
-  useEffect(() => {
-    // Check if window is defined to ensure client-side execution
-    if (typeof window !== "undefined") {
-      const provider = new OpenStreetMapProvider();
+  const a =
+    Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+    Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 
-      const searchControl = new (GeoSearchControl as any)({
-        provider,
-        style: 'bar', // 'bar' for a search bar, 'button' for a search button
-        showMarker: false, // Do not show a marker on search
-        autoClose: true,
-        retainZoomLevel: false,
-        animateZoom: true,
-        keepResult: true,
-        searchLabel: 'Enter address or location',
-      });
+  return R * c; // in metres
+};
 
-      map.addControl(searchControl);
+// Define a type for the AQI data points
+interface AQIData {
+  name: string;
+  aqi: number;
+  location: LatLngTuple;
+}
 
-      map.on('geosearch/showlocation', (result: any) => {
-        const { x: lng, y: lat } = result.location;
+// Component to handle map clicks and find the nearest AQI location
+const MapClickHandler = ({ setClickedAQI }: { setClickedAQI: (data: AQIData | null) => void }) => {
+  useMapEvent('click', (e) => {
+    const { lat, lng } = e.latlng;
 
-        // Check if the result is within Delhi bounds
-        const isInDelhi = delhiBounds.contains(L.latLng(lat, lng));
+    // Find the nearest AQI point
+    let nearestAQI: AQIData | null = null;
+    let minDistance = Infinity;
 
-        if (isInDelhi) {
-          setZoomLocation([lat, lng] as LatLngTuple);
-          map.setView([lat, lng], 14); // Zoom to the location
-        } else {
-          alert("Location is outside Delhi bounds");
-        }
-      });
+    aqiData.forEach((data) => {
+      const distance = getDistance(lat, lng, data.location[0], data.location[1]);
+      if (distance < minDistance) {
+        minDistance = distance;
+        nearestAQI = data;
+      }
+    });
 
-      return () => {
-        map.removeControl(searchControl);
-      };
+    // Show the nearest AQI point if within 5km radius
+    if (minDistance <= 5000 && nearestAQI) {
+      setClickedAQI(nearestAQI);
+    } else {
+      setClickedAQI(null); // No AQI data within range
     }
-  }, [map, setZoomLocation]);
+  });
 
   return null;
 };
 
-// Legend component
-
-
 // Main component
 export default function MapComponent() {
   const delhiCenter: LatLngTuple = [28.6139, 77.2090]; // Center of Delhi
-  const [zoomLocation, setZoomLocation] = useState<LatLngTuple | null>(null);
+  const [clickedAQI, setClickedAQI] = useState<AQIData | null>(null);
 
   return (
     <>
-      <MapContainer 
-        center={delhiCenter} 
-        zoom={11} 
-        maxBounds={delhiBounds} 
-        minZoom={10} 
+      <MapContainer
+        center={delhiCenter}
+        zoom={11}
+        maxBounds={delhiBounds}
+        minZoom={10}
         maxBoundsViscosity={1.0}
         style={{ height: "100vh", width: "100%" }}
       >
@@ -98,23 +100,33 @@ export default function MapComponent() {
 
         {/* Render AQI circles */}
         {aqiData.map((data, index) => (
-          <Circle 
+          <Circle
             key={index}
             center={data.location as LatLngTuple} // Convert location to LatLngTuple
             radius={1000} // 1000 meters radius
-            pathOptions={{ 
-              color: getAQIColor(data.aqi), 
-              fillColor: getAQIColor(data.aqi), 
-              fillOpacity: 0.5 
+            pathOptions={{
+              color: getAQIColor(data.aqi),
+              fillColor: getAQIColor(data.aqi),
+              fillOpacity: 0.5,
             }}
           />
         ))}
 
-        {/* SearchField component to handle location search */}
-        <SearchField setZoomLocation={setZoomLocation} />
+        {/* Render popup on click */}
+        {clickedAQI && (
+          <Popup position={clickedAQI.location}>
+            <div>
+              <strong>{clickedAQI.name}</strong><br />
+              AQI: {clickedAQI.aqi}
+            </div>
+          </Popup>
+        )}
 
-        {/* Legend component */}
-        <Legend/>
+        {/* Handle clicks to show AQI */}
+        <MapClickHandler setClickedAQI={setClickedAQI} />
+
+        {/* Legend component to handle AQI legend */}
+        <Legend />
       </MapContainer>
     </>
   );

@@ -1,14 +1,16 @@
 import { useMap } from "react-leaflet";
 import { useEffect } from "react";
-import L from "leaflet";
+import L, { Control } from "leaflet";
 
 const Legend = () => {
   const map = useMap();
 
   useEffect(() => {
-    const legend = L.control({ position: "bottomright" });
+    // Create the legend control
+    const legendControl = new Control({ position: "bottomright" });
 
-    legend.onAdd = function () {
+    // Define how the legend control will be added to the map
+    legendControl.onAdd = function () {
       const div = L.DomUtil.create("div", "info legend");
       const grades = [0, 50, 100, 150, 200, 300];
       const colors = ["green", "yellow", "orange", "red", "purple", "maroon"];
@@ -34,10 +36,12 @@ const Legend = () => {
       return div;
     };
 
-    legend.addTo(map);
+    // Add the legend to the map
+    legendControl.addTo(map);
 
+    // Clean up the control when the component unmounts
     return () => {
-      map.removeControl(legend);
+      map.removeControl(legendControl);
     };
   }, [map]);
 
