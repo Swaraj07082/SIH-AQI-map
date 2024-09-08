@@ -1,11 +1,11 @@
-
 "use client";
-import { MapContainer, TileLayer, Circle, useMap } from "react-leaflet";
+import { MapContainer, TileLayer, Circle, useMap, useMapEvent } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import 'leaflet-geosearch/dist/geosearch.css';
 import L, { LatLngTuple } from 'leaflet';
 import { GeoSearchControl, OpenStreetMapProvider } from 'leaflet-geosearch';
 import { useEffect, useState } from "react";
+import Legend from "./Legend";
 
 // Define the bounds for Delhi
 const delhiBounds = L.latLngBounds(
@@ -76,6 +76,9 @@ const SearchField = ({ setZoomLocation }: { setZoomLocation: (position: LatLngTu
   return null;
 };
 
+// Legend component
+
+
 // Main component
 export default function MapComponent() {
   const delhiCenter: LatLngTuple = [28.6139, 77.2090]; // Center of Delhi
@@ -109,6 +112,9 @@ export default function MapComponent() {
 
         {/* SearchField component to handle location search */}
         <SearchField setZoomLocation={setZoomLocation} />
+
+        {/* Legend component */}
+        <Legend/>
       </MapContainer>
     </>
   );
